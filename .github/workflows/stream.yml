@@ -9,13 +9,25 @@ jobs:
   stream:
     runs-on: ubuntu-latest
     steps:
-      - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Start Live Stream
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies & FFmpeg
         run: |
-          ffmpeg -re -f lavfi -i color=c=black:s=1280x720:r=30 \
-          -i "YOUR_AUDIO_OR_STREAM_URL" \
-          -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
-          -c:a aac -b:a 128k -ar 44100 \
-          -f flv "${{ secrets.FB_LIVE_URL }}"
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg xvfb
+          npm install puppeteer-extra puppeteer-extra-plugin-stealth puppeteer
+
+      - name: Run Puppeteer Stream Script
+        env:
+          FB_LIVE_URL: ${{ secrets.FB_LIVE_URL }}
+        run: |
+          Xvfb :99 -screen 0 1280x720x24 &
+          export DISPLAY=:99.0
+          sleep 3
+          node stream.js
