@@ -13,20 +13,12 @@ jobs:
       - name: Code Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install Dependencies & Chrome
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb wget
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt install -y ./google-chrome-stable_current_amd64.deb
-          npm install
+          sudo apt-get install -y ffmpeg xvfb fluxbox chromium-browser
 
-      - name: Start Live Streaming
+      - name: Run Stream Script
         env:
           FB_STREAM_KEY: ${{ secrets.FB_STREAM_KEY }}
         run: |
