@@ -13,10 +13,18 @@ jobs:
       - name: Code Checkout
         uses: actions/checkout@v3
 
-      - name: Install FFmpeg, Chromium and Xvfb
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install FFmpeg & Xvfb
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb chromium-browser xdotool
+          sudo apt-get install -y ffmpeg xvfb
+
+      - name: Install Dependencies
+        run: npm install
 
       - name: Start Live Streaming
         env:
