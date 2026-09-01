@@ -1,34 +1,31 @@
-name: 24/7 Website Screen Streamer
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
-on:
-  schedule:
-    - cron: '0 */5 * * *'
-  workflow_dispatch:
+puppeteer.use(StealthPlugin());
 
-jobs:
-  stream:
-    runs-on: ubuntu-latest
+(async () => {
+  const browser = await puppeteer.launch({
+    headless: false,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-blink-features=AutomationControlled',
+      // இலவச Proxy IP மூலம் Request அனுப்புதல்
+      '--proxy-server=http://104.207.135.226:3128',
+      '--window-size=1280,720'
+    ],
+    defaultViewport: { width: 1280, height: 720 }
+  });
 
-    steps:
-      - name: Code Checkout
-        uses: actions/checkout@v3
+  const page = await browser.newPage();
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+  await page.setUserAgent(
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+  );
 
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb fluxbox
-
-      - name: Install Node Packages
-        run: npm install
-
-      - name: Start Live Streaming
-        env:
-          FB_STREAM_KEY: ${{ secrets.FB_STREAM_KEY }}
-        run: |
-          chmod +x stream.sh
-          timeout 5h ./stream.sh || true
+  await page.goto('https://kingfmtamilgroup.blogspot.com/', {
+    waitUntil: 'networkidle2',
+    timeout: 90000
+  });
+})();
