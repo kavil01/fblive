@@ -1,31 +1,21 @@
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+name: 24/7 Facebook Stream
 
-puppeteer.use(StealthPlugin());
+on:
+  schedule:
+    - cron: '0 */5 * * *'
+  workflow_dispatch:
 
-(async () => {
-  const browser = await puppeteer.launch({
-    headless: false,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-blink-features=AutomationControlled',
-      // இலவச Proxy IP மூலம் Request அனுப்புதல்
-      '--proxy-server=http://104.207.135.226:3128',
-      '--window-size=1280,720'
-    ],
-    defaultViewport: { width: 1280, height: 720 }
-  });
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-  const page = await browser.newPage();
-
-  await page.setUserAgent(
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-  );
-
-  await page.goto('https://kingfmtamilgroup.blogspot.com/', {
-    waitUntil: 'networkidle2',
-    timeout: 90000
-  });
-})();
+      - name: Start Live Stream
+        run: |
+          ffmpeg -re -f lavfi -i color=c=black:s=1280x720:r=30 \
+          -i "YOUR_AUDIO_OR_STREAM_URL" \
+          -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
+          -c:a aac -b:a 128k -ar 44100 \
+          -f flv "${{ secrets.FB_LIVE_URL }}"
