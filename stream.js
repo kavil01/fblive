@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const fs = require('fs');
 
 // Stealth plugin மூலம் Bot கண்டறிதலைத் தடுத்தல்
 puppeteer.use(StealthPlugin());
@@ -13,7 +14,7 @@ puppeteer.use(StealthPlugin());
       '--disable-dev-shm-usage',
       '--disable-blink-features=AutomationControlled',
       '--no-first-run',
-      '--no-default-browser-check',
+      '--start-fullscreen',
       '--window-size=1280,720'
     ],
     defaultViewport: {
@@ -29,7 +30,21 @@ puppeteer.use(StealthPlugin());
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
   );
 
-  // Bot-க்கான அடையாளங்களை மறைத்தல்
+  // 1. Cookies-ஐ ஏற்றுதல் (நீங்கள் JSON வடிவில் உருவாக்கியிருக்க வேண்டும்)
+  try {
+    if (fs.existsSync('cookies.json')) {
+      const cookiesString = fs.readFileSync('cookies.json', 'utf8');
+      const cookies = JSON.parse(cookiesString);
+      await page.setCookie(...cookies);
+      console.log('Cookies loaded successfully!');
+    } else {
+      console.log('cookies.json not found. Proceeding without cookies.');
+    }
+  } catch (err) {
+    console.error('Error loading cookies:', err);
+  }
+
+  // 2. Bot-க்கான அடையாளங்களை மறைத்தல்
   await page.evaluateOnNewDocument(() => {
     Object.defineProperty(navigator, 'webdriver', { get: () => false });
   });
