@@ -1,36 +1,16 @@
 #!/bin/bash
 
-# 1. Virtual Screen உருவாக்கல்
-Xvfb :99 -screen 0 1280x720x24 &
-export DISPLAY=:99
-sleep 3
+# yt-dlp கருவியை பதிவிறக்கம் செய்து புதுப்பித்தல்
+sudo wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp
+sudo chmod a+rx /usr/local/bin/yt-dlp
 
-# 2. Window Manager (Fluxbox) இயக்குதல்
-fluxbox &
-sleep 2
+# உங்கள் Blogger தளத்தில் இயங்கும் YouTube Video / Live Link-ஐ கீழே உள்ள URL-ல் மாற்றவும்
+YOUTUBE_URL="https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
 
-# 3. Chromium-ஐ பாப்-அப் வராதவாறு கொடிகளுடன் திறத்தல்
-chromium-browser \
-  --no-sandbox \
-  --disable-setuid-sandbox \
-  --disable-dev-shm-usage \
-  --no-first-run \
-  --no-default-browser-check \
-  --disable-first-run-ui \
-  --start-maximized \
-  --start-fullscreen \
-  --window-size=1280,720 \
-  --window-position=0,0 \
-  "https://kingfmtamilgroup.blogspot.com/" &
+# Direct Stream Link-ஐ எடுத்து FFmpeg மூலம் நேரலையாக ஸ்ட்ரீம் செய்தல்
+STREAM_URL=$(yt-dlp -g -f "best[ext=mp4]/best" "$YOUTUBE_URL")
 
-# 4. ஒருவேளை Terms பாப்-அப் வந்தால் அதை தானாக Accept செய்ய Enter அழுத்துதல்
-sleep 5
-xdotool key Return
-sleep 15
-
-# 5. FFmpeg ஸ்ட்ரீமிங்கைத் தொடங்குதல்
-ffmpeg -f x11grab -video_size 1280x720 -i :99.0 \
-       -f lavfi -i anullsrc \
-       -c:v libx264 -preset ultrafast -pix_fmt yuv420p -g 60 -b:v 2500k \
-       -c:a aac -b:a 128000 -ar 44100 \
+ffmpeg -re -i "$STREAM_URL" \
+       -c:v libx264 -preset ultrafast -b:v 2500k -maxrate 2500k -bufsize 5000k \
+       -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
        -f flv "rtmps://live-api-s.facebook.com:443/rtmp/${FB_STREAM_KEY}"
