@@ -2,7 +2,6 @@ name: 24/7 Web Page Streamer
 
 on:
   schedule:
-    # 5 மணி நேரத்திற்கு ஒருமுறை தானாகவே ரன் ஆகும்
     - cron: '0 */5 * * *'
   workflow_dispatch:
 
@@ -14,12 +13,10 @@ jobs:
       - name: Code Checkout
         uses: actions/checkout@v3
 
-      - name: Install FFmpeg & Chrome
+      - name: Install FFmpeg, Chromium and Xvfb
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb wget
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt install -y ./google-chrome-stable_current_amd64.deb
+          sudo apt-get install -y ffmpeg xvfb chromium-browser xdotool
 
       - name: Start Live Streaming
         env:
