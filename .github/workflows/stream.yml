@@ -1,4 +1,4 @@
-name: 24/7 Web Page Streamer
+name: 24/7 Website Screen Streamer
 
 on:
   schedule:
@@ -13,12 +13,20 @@ jobs:
       - name: Code Checkout
         uses: actions/checkout@v3
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb fluxbox chromium-browser xdotool
+          sudo apt-get install -y ffmpeg xvfb fluxbox
 
-      - name: Run Stream Script
+      - name: Install Node Packages
+        run: npm install
+
+      - name: Start Live Streaming
         env:
           FB_STREAM_KEY: ${{ secrets.FB_STREAM_KEY }}
         run: |
