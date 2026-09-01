@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Virtual Screen அமைத்தல்
+# Virtual Screen 1280x720 24-bit அமைத்தல்
 Xvfb :99 -screen 0 1280x720x24 &
 export DISPLAY=:99
 
-# Node.js மூலம் Puppeteer-ஐத் தொடங்குதல்
+# Puppeteer மூலம் உலாவியை இயக்குதல்
 node stream.js &
-sleep 15
+sleep 20
 
 # FFmpeg மூலம் Facebook Live-க்கு ஸ்ட்ரீம் செய்தல்
 ffmpeg -f x11grab -video_size 1280x720 -i :99.0 \
