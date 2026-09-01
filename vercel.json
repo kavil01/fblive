@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "https://kingfmtamilgroup.blogspot.com/$1" }
+  ]
+}
