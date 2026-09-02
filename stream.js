@@ -8,11 +8,11 @@ puppeteer.use(StealthPlugin());
   const streamUrl = process.env.FB_LIVE_URL;
 
   if (!streamUrl || streamUrl.trim() === "") {
-    console.error("Critical Error: FB_LIVE_URL Secret is empty or missing in GitHub Settings!");
+    console.error("Critical Error: FB_LIVE_URL Secret is missing!");
     process.exit(1);
   }
 
-  console.log("Launching Puppeteer Stealth Browser...");
+  console.log("Launching Stealth Browser...");
 
   const browser = await puppeteer.launch({
     headless: false,
@@ -29,19 +29,24 @@ puppeteer.use(StealthPlugin());
 
   const page = await browser.newPage();
   
+  // Real Chrome Desktop User-Agent
   await page.setUserAgent(
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
   );
 
-  console.log('Loading direct Netlify TV Player...');
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+  });
+
+  console.log('Loading Full TV Page via Netlify...');
   
-  // புதிய Netlify TV Hosted URL
+  // உங்கள் Netlify URL
   await page.goto('https://courageous-longma-5917a5.netlify.app/', {
     waitUntil: 'networkidle2',
     timeout: 90000
   });
 
-  console.log('Player loaded successfully! Starting FFmpeg Stream to Facebook...');
+  console.log('Full TV Page loaded! Relaying stream to Facebook...');
 
   const ffmpeg = spawn('ffmpeg', [
     '-f', 'x11grab',
@@ -70,7 +75,7 @@ puppeteer.use(StealthPlugin());
   });
 
   ffmpeg.on('close', (code) => {
-    console.log(`FFmpeg process exited with code ${code}`);
+    console.log(`FFmpeg exited with code ${code}`);
   });
 
   await new Promise(() => {});
