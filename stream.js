@@ -8,9 +8,11 @@ puppeteer.use(StealthPlugin());
   const streamUrl = process.env.FB_LIVE_URL;
 
   if (!streamUrl || streamUrl.trim() === "") {
-    console.error("Critical Error: FB_LIVE_URL Secret is missing!");
+    console.error("Critical Error: FB_LIVE_URL Secret is empty or missing in GitHub Settings!");
     process.exit(1);
   }
+
+  console.log("Launching Puppeteer Stealth Browser...");
 
   const browser = await puppeteer.launch({
     headless: false,
@@ -19,7 +21,6 @@ puppeteer.use(StealthPlugin());
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-blink-features=AutomationControlled',
-      '--disable-features=IsolateOrigins,site-per-process',
       '--window-size=1280,720',
       '--autoplay-policy=no-user-gesture-required'
     ],
@@ -28,31 +29,19 @@ puppeteer.use(StealthPlugin());
 
   const page = await browser.newPage();
   
-  // Real Chrome User-Agent மாற்றுதல்
   await page.setUserAgent(
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
   );
 
-  // Bot detection சிக்னல்களை மறைத்தல்
-  await page.evaluateOnNewDocument(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => false });
-  });
-
-  console.log('Loading page via Netlify Proxy...');
-  await page.goto('https://zippy-tarsier-67687f.netlify.app/', {
+  console.log('Loading direct Netlify TV Player...');
+  
+  // புதிய Netlify TV Hosted URL
+  await page.goto('https://courageous-longma-5917a5.netlify.app/', {
     waitUntil: 'networkidle2',
     timeout: 90000
   });
 
-  // Player Autoplay செய்ய ஒரு சிறிய கிளிக்
-  try {
-    await page.waitForTimeout(5000);
-    await page.mouse.click(640, 360);
-  } catch (e) {
-    console.log('Click optional');
-  }
-
-  console.log('Starting FFmpeg Stream to Facebook...');
+  console.log('Player loaded successfully! Starting FFmpeg Stream to Facebook...');
 
   const ffmpeg = spawn('ffmpeg', [
     '-f', 'x11grab',
