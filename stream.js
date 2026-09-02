@@ -1,10 +1,9 @@
 const { execSync, spawn } = require('child_process');
-const fs = require('fs');
 
 (async () => {
   const fbStreamUrl = process.env.FB_LIVE_URL;
   
-  // உங்கள் YouTube Live Video Link (அல்லது Channel Live Link)
+  // உங்கள் YouTube Live Video Link
   const ytLiveUrl = 'https://www.youtube.com/watch?v=7Wv5ZXjWzac'; 
   
   // ஓடும் செய்திகள் (News Tagline Text)
@@ -18,7 +17,8 @@ const fs = require('fs');
   console.log('Fetching YouTube Live Stream URL using yt-dlp...');
   let directHlsUrl = '';
   try {
-    directHlsUrl = execSync(`yt-dlp -g -f best ${ytLiveUrl}`).toString().trim();
+    const command = `yt-dlp -g --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" --extractor-args "youtube:player_client=android,web" ${ytLiveUrl}`;
+    directHlsUrl = execSync(command).toString().trim();
   } catch (err) {
     console.error('Failed to fetch YouTube URL:', err);
     process.exit(1);
@@ -26,21 +26,16 @@ const fs = require('fs');
 
   console.log('Stream URL fetched successfully! Processing Overlays and Streaming to Facebook...');
 
-  // FFmpeg Filter string for Logo and News Ticker
-  // Top Right Logo Placement + Bottom News Ticker Text
   const filterComplex = [
-    // Logo Overlay (Top Right: x=main_w-overlay_w-20, y=20)
     `[0:v][1:v]overlay=main_w-overlay_w-20:20[tmp];`,
-    // News Ticker Banner Background (Bottom black bar)
     `[tmp]drawbox=y=ih-50:color=black@0.7:width=iw:height=50:t=fill[bg];`,
-    // Scrolling News Text (Right to Left scroll)
     `[bg]drawtext=text='${newsTickerText}':fontcolor=white:fontsize=24:x=w-mod(max_t*100\\,w+tw):y=h-35`
   ].join('');
 
   const ffmpegArgs = [
     '-re',
-    '-i', directHlsUrl,               // [0:v] YouTube Live Video Input
-    '-i', 'logo.png',                  // [1:v] Logo Image File Input
+    '-i', directHlsUrl,
+    '-i', 'logo.png',
     '-filter_complex', filterComplex,
     '-c:v', 'libx264',
     '-preset', 'veryfast',
