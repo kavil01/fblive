@@ -29,7 +29,6 @@ puppeteer.use(StealthPlugin());
 
   const page = await browser.newPage();
   
-  // Real Chrome Desktop User-Agent
   await page.setUserAgent(
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
   );
@@ -38,10 +37,10 @@ puppeteer.use(StealthPlugin());
     Object.defineProperty(navigator, 'webdriver', { get: () => false });
   });
 
-  console.log('Loading Full TV Page via Netlify...');
+  console.log('Loading Full TV Page via new Netlify URL...');
   
-  // உங்கள் Netlify URL
-  await page.goto('https://courageous-longma-5917a5.netlify.app/', {
+  // புதிய Netlify முகவரி
+  await page.goto('https://capable-liger-68f646.netlify.app/', {
     waitUntil: 'networkidle2',
     timeout: 90000
   });
