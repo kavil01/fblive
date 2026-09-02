@@ -4,7 +4,7 @@ const { execSync, spawn } = require('child_process');
   const fbStreamUrl = process.env.FB_LIVE_URL;
   
   // உங்கள் YouTube Live Video Link
-  const ytLiveUrl = 'https://www.youtube.com/watch?v=7Wv5ZXjWzac'; 
+  const ytLiveUrl = 'https://www.youtube.com/watch?v=7Wv5ZXJwzac'; 
   
   // ஓடும் செய்திகள் (News Tagline Text)
   const newsTickerText = 'KINGTAMIL MEDIA LIVE - 24/7 NEWS & ENTERTAINMENT CHANNEL - LATEST NEWS UPDATES...';
@@ -14,10 +14,11 @@ const { execSync, spawn } = require('child_process');
     process.exit(1);
   }
 
-  console.log('Fetching YouTube Live Stream URL using yt-dlp...');
+  console.log('Fetching YouTube Live Stream URL using yt-dlp (iOS Client Bypass)...');
   let directHlsUrl = '';
   try {
-    const command = `yt-dlp -g --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" --extractor-args "youtube:player_client=android,web" ${ytLiveUrl}`;
+    // iOS Player Client மூலம் YouTube Bot Check-ஐத் தாண்டி URL எடுக்கும் கட்டளை
+    const command = `yt-dlp -g --extractor-args "youtube:player_client=ios" "${ytLiveUrl}"`;
     directHlsUrl = execSync(command).toString().trim();
   } catch (err) {
     console.error('Failed to fetch YouTube URL:', err);
