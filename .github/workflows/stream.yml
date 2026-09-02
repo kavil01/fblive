@@ -1,30 +1,37 @@
-name: Pure FFmpeg TV Stream
+name: KING FM TV Stream
 
 on:
-  schedule:
-    - cron: '0 */5 * * *'
   workflow_dispatch:
 
 jobs:
   stream:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
+
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
-      - name: Install Latest FFmpeg and yt-dlp
+      - name: Install FFmpeg and yt-dlp
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg python3-pip
-          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo apt-get install -y ffmpeg python3 python3-pip
+
+          sudo curl -L \
+          https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
+          -o /usr/local/bin/yt-dlp
+
           sudo chmod a+rx /usr/local/bin/yt-dlp
 
-      - name: Run Direct Overlay Stream
+          ffmpeg -version
+          yt-dlp --version
+
+      - name: Start KING FM TV Stream
         env:
           FB_LIVE_URL: ${{ secrets.FB_LIVE_URL }}
         run: |
