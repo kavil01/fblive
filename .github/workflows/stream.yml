@@ -20,14 +20,14 @@ jobs:
       - name: Install Dependencies & FFmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb
+          sudo apt-get install -y ffmpeg xvfb dbus
           npm install puppeteer-extra puppeteer-extra-plugin-stealth puppeteer
 
       - name: Run Puppeteer Stream Script
         env:
           FB_LIVE_URL: ${{ secrets.FB_LIVE_URL }}
         run: |
+          export DISPLAY=:99
           Xvfb :99 -screen 0 1280x720x24 &
-          export DISPLAY=:99.0
           sleep 3
           node stream.js
