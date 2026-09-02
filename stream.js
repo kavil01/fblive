@@ -1,66 +1,103 @@
-const { execSync, spawn } = require('child_process');
+const { spawn } = require('child_process');
 
-(async () => {
-  const fbStreamUrl = process.env.FB_LIVE_URL;
-  
-  // உங்கள் YouTube Live Video Link
-  const ytLiveUrl = 'https://www.youtube.com/watch?v=7Wv5ZXJwzac'; 
-  
-  // ஓடும் செய்திகள் (News Tagline Text)
-  const newsTickerText = 'KINGTAMIL MEDIA LIVE - 24/7 NEWS & ENTERTAINMENT CHANNEL - LATEST NEWS UPDATES...';
+const fbStreamUrl = process.env.FB_LIVE_URL;
 
-  if (!fbStreamUrl) {
-    console.error("Error: FB_LIVE_URL secret is missing!");
-    process.exit(1);
-  }
+// உங்கள் video file
+const sourceVideo = process.env.SOURCE_VIDEO || 'video.mp4';
 
-  console.log('Fetching YouTube Live Stream URL using yt-dlp (iOS Client Bypass)...');
-  let directHlsUrl = '';
-  try {
-    // iOS Player Client மூலம் YouTube Bot Check-ஐத் தாண்டி URL எடுக்கும் கட்டளை
-    const command = `yt-dlp -g --extractor-args "youtube:player_client=ios" "${ytLiveUrl}"`;
-    directHlsUrl = execSync(command).toString().trim();
-  } catch (err) {
-    console.error('Failed to fetch YouTube URL:', err);
-    process.exit(1);
-  }
+// ஓடும் செய்தி
+const newsTickerText =
+process.env.NEWS_TICKER ||
+'KING FM TAMIL MEDIA LIVE - 24/7 NEWS & ENTERTAINMENT - LATEST NEWS UPDATES';
 
-  console.log('Stream URL fetched successfully! Processing Overlays and Streaming to Facebook...');
+// Logo file
+const logoFile = 'logo.png';
 
-  const filterComplex = [
-    `[0:v][1:v]overlay=main_w-overlay_w-20:20[tmp];`,
-    `[tmp]drawbox=y=ih-50:color=black@0.7:width=iw:height=50:t=fill[bg];`,
-    `[bg]drawtext=text='${newsTickerText}':fontcolor=white:fontsize=24:x=w-mod(max_t*100\\,w+tw):y=h-35`
-  ].join('');
+if (!fbStreamUrl) {
+console.error('ERROR: FB_LIVE_URL secret is missing!');
+process.exit(1);
+}
 
-  const ffmpegArgs = [
-    '-re',
-    '-i', directHlsUrl,
-    '-i', 'logo.png',
-    '-filter_complex', filterComplex,
-    '-c:v', 'libx264',
-    '-preset', 'veryfast',
-    '-b:v', '2500k',
-    '-maxrate', '2500k',
-    '-bufsize', '5000k',
-    '-pix_fmt', 'yuv420p',
-    '-g', '60',
-    '-c:a', 'aac',
-    '-b:a', '128k',
-    '-ar', '44100',
-    '-f', 'flv',
-    fbStreamUrl.trim()
-  ];
+console.log('====================================');
+console.log('KING FM TV STREAM STARTING');
+console.log('====================================');
 
-  const ffmpeg = spawn('ffmpeg', ffmpegArgs);
+const safeTicker = newsTickerText
+.replace(/\/g, '\\')
+.replace(/'/g, "\'")
+.replace(/:/g, '\:');
 
-  ffmpeg.stderr.on('data', (data) => {
-    console.log(`FFmpeg: ${data.toString()}`);
-  });
+const filterComplex = [
+"[0:v][1:v]overlay=W-w-20:20[logo];",
+"[logo]drawbox=x=0:y=H-70:w=W:h=70:color=black@0.75:t=fill[tickerbg];",
+"[tickerbg]drawtext=" +
+"text='${safeTicker}':" +
+"fontcolor=white:" +
+"fontsize=24:" +
+"x=W-mod(t*100\\,W+tw):" +
+"y=H-45"
+].join('');
 
-  ffmpeg.on('close', (code) => {
-    console.log(`FFmpeg process exited with code ${code}`);
-  });
+const ffmpegArgs = [
+'-re',
 
-  await new Promise(() => {});
-})();
+// Video loop
+'-stream_loop', '-1',
+
+// Main video
+'-i', sourceVideo,
+
+// Logo
+'-loop', '1',
+'-i', logoFile,
+
+'-filter_complex', filterComplex,
+
+'-map', '0:v:0',
+'-map', '0:a:0?',
+
+'-c:v', 'libx264',
+'-preset', 'veryfast',
+
+'-b:v', '2500k',
+'-maxrate', '2500k',
+'-bufsize', '5000k',
+
+'-pix_fmt', 'yuv420p',
+
+'-r', '30',
+'-g', '60',
+
+'-c:a', 'aac',
+'-b:a', '128k',
+'-ar', '44100',
+
+'-shortest',
+
+'-f', 'flv',
+
+fbStreamUrl.trim()
+];
+
+console.log('Starting FFmpeg...');
+
+const ffmpeg = spawn('ffmpeg', ffmpegArgs);
+
+ffmpeg.stderr.on('data', (data) => {
+console.log(data.toString());
+});
+
+ffmpeg.on('error', (error) => {
+console.error('FFmpeg Error:', error);
+});
+
+ffmpeg.on('close', (code) => {
+console.log("FFmpeg stopped with code: ${code}");
+
+// Auto restart
+console.log('Restarting stream in 10 seconds...');
+
+setTimeout(() => {
+process.exit(1);
+}, 10000);
+});
