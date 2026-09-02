@@ -5,7 +5,7 @@ const fs = require('fs');
   const fbStreamUrl = process.env.FB_LIVE_URL;
   
   // உங்கள் YouTube Live Video Link (அல்லது Channel Live Link)
-  const ytLiveUrl = 'https://www.youtube.com/watch?v=YOUR_YOUTUBE_VIDEO_ID'; 
+  const ytLiveUrl = 'https://www.youtube.com/watch?v=7Wv5ZXjWzac'; 
   
   // ஓடும் செய்திகள் (News Tagline Text)
   const newsTickerText = 'KINGTAMIL MEDIA LIVE - 24/7 NEWS & ENTERTAINMENT CHANNEL - LATEST NEWS UPDATES...';
