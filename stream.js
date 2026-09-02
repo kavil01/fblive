@@ -7,21 +7,19 @@ puppeteer.use(StealthPlugin());
 (async () => {
   const streamUrl = process.env.FB_LIVE_URL;
 
-  // Secret இணைப்பு சரியாக உள்ளதா எனக் சரிபார்த்தல்
   if (!streamUrl || streamUrl.trim() === "") {
-    console.error("Critical Error: FB_LIVE_URL Secret is empty or missing in GitHub Settings!");
+    console.error("Critical Error: FB_LIVE_URL Secret is missing!");
     process.exit(1);
   }
 
-  console.log("Target Stream URL found! Launching browser...");
-
-  // 1. Puppeteer உலாவியைத் தொடங்குதல்
   const browser = await puppeteer.launch({
     headless: false,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-features=IsolateOrigins,site-per-process',
       '--window-size=1280,720',
       '--autoplay-policy=no-user-gesture-required'
     ],
@@ -30,21 +28,32 @@ puppeteer.use(StealthPlugin());
 
   const page = await browser.newPage();
   
+  // Real Chrome User-Agent மாற்றுதல்
   await page.setUserAgent(
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
   );
 
+  // Bot detection சிக்னல்களை மறைத்தல்
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+  });
+
   console.log('Loading page via Netlify Proxy...');
-  
-  // புதிய Netlify Proxy முகவரி
   await page.goto('https://zippy-tarsier-67687f.netlify.app/', {
     waitUntil: 'networkidle2',
     timeout: 90000
   });
 
-  console.log('Page loaded! Starting FFmpeg Stream to Facebook...');
+  // Player Autoplay செய்ய ஒரு சிறிய கிளிக்
+  try {
+    await page.waitForTimeout(5000);
+    await page.mouse.click(640, 360);
+  } catch (e) {
+    console.log('Click optional');
+  }
 
-  // 2. Xvfb திரையைப் பிடித்து Facebook-க்கு ஸ்ட்ரீம் செய்தல்
+  console.log('Starting FFmpeg Stream to Facebook...');
+
   const ffmpeg = spawn('ffmpeg', [
     '-f', 'x11grab',
     '-video_size', '1280x720',
@@ -75,6 +84,5 @@ puppeteer.use(StealthPlugin());
     console.log(`FFmpeg process exited with code ${code}`);
   });
 
-  // Script தொடர்ந்து இயங்குவதற்கான லூப்
   await new Promise(() => {});
 })();
