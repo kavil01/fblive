@@ -1,62 +1,49 @@
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-const { spawn } = require('child_process');
-
-puppeteer.use(StealthPlugin());
+const { execSync, spawn } = require('child_process');
+const fs = require('fs');
 
 (async () => {
-  const streamUrl = process.env.FB_LIVE_URL;
+  const fbStreamUrl = process.env.FB_LIVE_URL;
+  
+  // உங்கள் YouTube Live Video Link (அல்லது Channel Live Link)
+  const ytLiveUrl = 'https://www.youtube.com/watch?v=YOUR_YOUTUBE_VIDEO_ID'; 
+  
+  // ஓடும் செய்திகள் (News Tagline Text)
+  const newsTickerText = 'KINGTAMIL MEDIA LIVE - 24/7 NEWS & ENTERTAINMENT CHANNEL - LATEST NEWS UPDATES...';
 
-  if (!streamUrl || streamUrl.trim() === "") {
-    console.error("Critical Error: FB_LIVE_URL Secret is missing!");
+  if (!fbStreamUrl) {
+    console.error("Error: FB_LIVE_URL secret is missing!");
     process.exit(1);
   }
 
-  console.log("Launching Stealth Browser...");
+  console.log('Fetching YouTube Live Stream URL using yt-dlp...');
+  let directHlsUrl = '';
+  try {
+    directHlsUrl = execSync(`yt-dlp -g -f best ${ytLiveUrl}`).toString().trim();
+  } catch (err) {
+    console.error('Failed to fetch YouTube URL:', err);
+    process.exit(1);
+  }
 
-  const browser = await puppeteer.launch({
-    headless: false,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-blink-features=AutomationControlled',
-      '--window-size=1280,720',
-      '--autoplay-policy=no-user-gesture-required'
-    ],
-    defaultViewport: { width: 1280, height: 720 }
-  });
+  console.log('Stream URL fetched successfully! Processing Overlays and Streaming to Facebook...');
 
-  const page = await browser.newPage();
-  
-  await page.setUserAgent(
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-  );
+  // FFmpeg Filter string for Logo and News Ticker
+  // Top Right Logo Placement + Bottom News Ticker Text
+  const filterComplex = [
+    // Logo Overlay (Top Right: x=main_w-overlay_w-20, y=20)
+    `[0:v][1:v]overlay=main_w-overlay_w-20:20[tmp];`,
+    // News Ticker Banner Background (Bottom black bar)
+    `[tmp]drawbox=y=ih-50:color=black@0.7:width=iw:height=50:t=fill[bg];`,
+    // Scrolling News Text (Right to Left scroll)
+    `[bg]drawtext=text='${newsTickerText}':fontcolor=white:fontsize=24:x=w-mod(max_t*100\\,w+tw):y=h-35`
+  ].join('');
 
-  await page.evaluateOnNewDocument(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => false });
-  });
-
-  console.log('Loading Full TV Page via new Netlify URL...');
-  
-  // புதிய Netlify முகவரி
-  await page.goto('https://capable-liger-68f646.netlify.app/', {
-    waitUntil: 'networkidle2',
-    timeout: 90000
-  });
-
-  console.log('Full TV Page loaded! Relaying stream to Facebook...');
-
-  const ffmpeg = spawn('ffmpeg', [
-    '-f', 'x11grab',
-    '-video_size', '1280x720',
-    '-framerate', '30',
-    '-i', ':99.0',
-    '-f', 'lavfi',
-    '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+  const ffmpegArgs = [
+    '-re',
+    '-i', directHlsUrl,               // [0:v] YouTube Live Video Input
+    '-i', 'logo.png',                  // [1:v] Logo Image File Input
+    '-filter_complex', filterComplex,
     '-c:v', 'libx264',
     '-preset', 'veryfast',
-    '-tune', 'zerolatency',
     '-b:v', '2500k',
     '-maxrate', '2500k',
     '-bufsize', '5000k',
@@ -66,15 +53,17 @@ puppeteer.use(StealthPlugin());
     '-b:a', '128k',
     '-ar', '44100',
     '-f', 'flv',
-    streamUrl.trim()
-  ]);
+    fbStreamUrl.trim()
+  ];
+
+  const ffmpeg = spawn('ffmpeg', ffmpegArgs);
 
   ffmpeg.stderr.on('data', (data) => {
-    console.log(`FFmpeg Log: ${data.toString()}`);
+    console.log(`FFmpeg: ${data.toString()}`);
   });
 
   ffmpeg.on('close', (code) => {
-    console.log(`FFmpeg exited with code ${code}`);
+    console.log(`FFmpeg process exited with code ${code}`);
   });
 
   await new Promise(() => {});
