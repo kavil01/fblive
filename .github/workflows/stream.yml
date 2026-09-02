@@ -1,4 +1,4 @@
-name: 24/7 Facebook Stream
+name: Pure FFmpeg TV Stream
 
 on:
   schedule:
@@ -17,17 +17,14 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Dependencies & FFmpeg
+      - name: Install FFmpeg and yt-dlp
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb dbus
-          npm install puppeteer-extra puppeteer-extra-plugin-stealth puppeteer
+          sudo apt-get install -y ffmpeg python3-pip
+          sudo pip3 install yt-dlp
 
-      - name: Run Puppeteer Stream Script
+      - name: Run Direct Overlay Stream
         env:
           FB_LIVE_URL: ${{ secrets.FB_LIVE_URL }}
         run: |
-          export DISPLAY=:99
-          Xvfb :99 -screen 0 1280x720x24 &
-          sleep 3
           node stream.js
