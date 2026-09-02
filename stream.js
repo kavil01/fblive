@@ -7,14 +7,16 @@ puppeteer.use(StealthPlugin());
 (async () => {
   const streamUrl = process.env.FB_LIVE_URL;
 
-  if (!streamUrl) {
-    console.error("Error: FB_LIVE_URL Secret is missing!");
+  // Secret சரியாக உள்ளதா எனச் சரிபார்த்தல்
+  if (!streamUrl || streamUrl.trim() === "") {
+    console.error("Critical Error: FB_LIVE_URL Secret is empty or missing in GitHub Settings!");
     process.exit(1);
   }
 
-  // 1. Puppeteer உலாவியைத் தொடங்குதல்
+  console.log("Target Stream URL found! Launching browser...");
+
   const browser = await puppeteer.launch({
-    headless: false, // DISPLAY-ல் திரையைக் காட்ட false வைக்க வேண்டும்
+    headless: false,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -35,7 +37,7 @@ puppeteer.use(StealthPlugin());
 
   console.log('Page loaded! Starting FFmpeg Stream to Facebook...');
 
-  // 2. FFmpeg மூலம் Xvfb திரையைப் பிடித்து Facebook-க்கு அனுப்புதல்
+  // Stream URL-ஐ சரியாக FFmpeg-க்கு அனுப்புதல்
   const ffmpeg = spawn('ffmpeg', [
     '-f', 'x11grab',
     '-video_size', '1280x720',
@@ -45,7 +47,6 @@ puppeteer.use(StealthPlugin());
     '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
     '-c:v', 'libx264',
     '-preset', 'veryfast',
-    '-tune', 'zerolatency',
     '-b:v', '2500k',
     '-maxrate', '2500k',
     '-bufsize', '5000k',
@@ -55,10 +56,9 @@ puppeteer.use(StealthPlugin());
     '-b:a', '128k',
     '-ar', '44100',
     '-f', 'flv',
-    streamUrl
+    streamUrl.trim()
   ]);
 
-  // Logs சரிபார்த்தல்
   ffmpeg.stderr.on('data', (data) => {
     console.log(`FFmpeg Log: ${data.toString()}`);
   });
@@ -67,6 +67,5 @@ puppeteer.use(StealthPlugin());
     console.log(`FFmpeg exited with code ${code}`);
   });
 
-  // Keep-alive loop
   await new Promise(() => {});
 })();
