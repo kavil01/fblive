@@ -17,13 +17,12 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install FFmpeg, Deno and yt-dlp
+      - name: Install Latest FFmpeg and yt-dlp
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg python3-pip curl
-          curl -fsSL https://deno.land/install.sh | sh
-          echo "$HOME/.deno/bin" >> $GITHUB_PATH
-          sudo pip3 install yt-dlp
+          sudo apt-get install -y ffmpeg python3-pip
+          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
 
       - name: Run Direct Overlay Stream
         env:
