@@ -1,0 +1,55 @@
+name: Direct m3u8 Restreamer with Overlay
+
+on:
+  workflow_dispatch:
+    inputs:
+      m3u8_url:
+        description: 'M3U8 Stream URL'
+        required: true
+        default: 'https://stream.galaxyott.live/live/subintv/tracks-v1a1/mono.m3u8'
+      platform:
+        description: 'நேரலை செய்ய வேண்டிய தளம் (facebook / youtube / both)'
+        required: true
+        default: 'facebook'
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install FFmpeg & Fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+
+      - name: Start Restreaming with Filters
+        env:
+          FB_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
+          YT_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          STREAM_URL: ${{ github.event.inputs.m3u8_url }}
+          PLATFORM: ${{ github.event.inputs.platform }}
+        run: |
+          # FFmpeg Filter Settings:
+          # 1. delogo: பழைய லோகோவை மறைக்க (Top Left: x=10, y=10)
+          # 2. drawbox: பழைய நியூஸ் ஸ்க்ரோல் பார் மறைக்க (Bottom Box)
+          # 3. overlay: உங்கள் லோகோவை அமைக்க (Top Right: W-w-20:20)
+          # 4. drawtext: பிரேக்கிங் நியூஸ் உரையாடல் & நேரடி கடிகாரம்
+
+          FILTER="[0:v]delogo=x=10:y=10:w=160:h=70[cleared_logo]; \
+                  [cleared_logo]drawbox=y=ih-90:color=black:t=fill[cleared_bottom]; \
+                  [cleared_bottom][1:v]overlay=W-w-20:20[tmp]; \
+                  [tmp]drawtext=text='LIVE NEWS':x=20:y=h-70:fontsize=32:fontcolor=white:box=1:boxcolor=red@0.9:boxborderw=10, \
+                  drawtext=text='%{localtime\:%H\\\:%M\\\:%S}':x=W-200:y=h-70:fontsize=28:fontcolor=yellow:box=1:boxcolor=black@0.7:boxborderw=8"
+
+          FFMPEG_CMD="ffmpeg -re -i \"$STREAM_URL\" -i logo.png -filter_complex \"$FILTER\" -c:v libx264 -preset ultrafast -b:v 2500k -maxrate 2500k -bufsize 5000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 128k -ar 44100"
+
+          if [ "$PLATFORM" = "facebook" ]; then
+            eval $FFMPEG_CMD -f flv "rtmps://live-api-s.facebook.com:443/rtmp/$FB_KEY"
+          elif [ "$PLATFORM" = "youtube" ]; then
+            eval $FFMPEG_CMD -f flv "rtmp://a.rtmp.youtube.com/live2/$YT_KEY"
+          elif [ "$PLATFORM" = "both" ]; then
+            eval $FFMPEG_CMD -f flv "rtmps://live-api-s.facebook.com:443/rtmp/$FB_KEY" \
+                             -f flv "rtmp://a.rtmp.youtube.com/live2/$YT_KEY"
+          fi
